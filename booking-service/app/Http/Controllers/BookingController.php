@@ -83,6 +83,14 @@ class BookingController extends Controller
                 'status' => 'booked'
             ]);
 
+            // 7. Kirim notifikasi ke Notification Service
+            Http::post(env('NOTIFICATION_SERVICE_URL') . '/notifications', [
+                'booking_code' => $booking->booking_code,
+                'user_id'      => $booking->user_id,
+                'vehicle_id'   => $booking->vehicle_id,
+                'total_price'  => $booking->total_price,
+            ]);
+
             return response()->json([
                 'success' => true,
                 'message' => 'Booking created successfully',
