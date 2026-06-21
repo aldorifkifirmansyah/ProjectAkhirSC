@@ -72,9 +72,13 @@ const vehicleController = {
           .status(404)
           .json({ success: false, message: "Vehicle not found" });
       }
-      return res
-        .status(200)
-        .json({ success: true, message: "Vehicle updated successfully" });
+
+      const updatedVehicle = await vehicleRepository.getById(req.params.id);
+      return res.status(200).json({
+        success: true,
+        message: "Vehicle updated successfully",
+        data: updatedVehicle,
+      });
     } catch (error) {
       if (error.code === "ER_DUP_ENTRY") {
         return res
@@ -109,21 +113,14 @@ const vehicleController = {
           .json({ success: false, message: "Status field is required" });
       }
 
-      const vehicle = await vehicleRepository.getById(req.params.id);
-      if (!vehicle) {
+      const vehicleExists = await vehicleRepository.exists(req.params.id);
+      if (!vehicleExists) {
         return res
           .status(404)
           .json({ success: false, message: "Vehicle not found" });
       }
 
-      vehicle.status = status;
-      const isUpdated = await vehicleRepository.update(req.params.id, vehicle);
-
-      if (!isUpdated) {
-        return res
-          .status(500)
-          .json({ success: false, message: "Failed to update status" });
-      }
+      await vehicleRepository.patchStatus(req.params.id, status);
 
       return res.status(200).json({
         success: true,

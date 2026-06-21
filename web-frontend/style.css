@@ -1,0 +1,39 @@
+/* ── Scrollbars ──────────────────────────────────────────────────────────────── */
+::-webkit-scrollbar        { width: 5px; height: 4px; }
+::-webkit-scrollbar-track  { background: #09090b; }
+::-webkit-scrollbar-thumb  { background: #3f3f46; border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: #52525b; }
+
+/* ── Date / time input ──────────────────────────────────────────────────────── */
+/* Invert the browser-native calendar icon so it's visible on dark backgrounds */
+input[type="date"]::-webkit-calendar-picker-indicator {
+  filter: invert(0.65);
+  cursor: pointer;
+  border-radius: 3px;
+}
+input[type="date"]::-webkit-calendar-picker-indicator:hover { filter: invert(0.9); }
+
+/* Firefox: colour-scheme keeps the date popup dark */
+input[type="date"] { color-scheme: dark; }
+
+/* ── File drop zone ──────────────────────────────────────────────────────────── */
+.drop-zone {
+  border: 2px dashed #3f3f46;
+  transition: border-color 0.15s ease, background-color 0.15s ease;
+}
+.drop-zone:hover,
+.drop-zone.drag-over {
+  border-color: #71717a;
+  background-color: rgba(39, 39, 42, 0.5);
+}
+
+/* ── Skeleton pulse (cross-browser consistent timing) ────────────────────────── */
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50%       { opacity: 0.35; }
+}
+.animate-pulse { animation: pulse 1.8s cubic-bezier(0.4, 0, 0.6, 1) infinite; }
+
+/* ── Table thin horizontal scroll ───────────────────────────────────────────── */
+.table-scroll { overflow-x: auto; }
+.table-scroll::-webkit-scrollbar { height: 3px; }

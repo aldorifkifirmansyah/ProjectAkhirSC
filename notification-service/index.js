@@ -1,39 +1,72 @@
-require('dotenv').config();
-const express = require('express');
-const cors = require('cors');
-const fs = require('fs');
-const path = require('path');
+require("dotenv").config();
+const express = require("express");
+const cors = require("cors");
+const pool = require("./config/database"); // Memanggil pool MariaDB
 
 const app = express();
 const PORT = process.env.PORT || 3002;
-const LOG_FILE = path.join(__dirname, 'notification_logs.txt');
 
 app.use(cors());
 app.use(express.json());
 
-app.post('/api/notifications', (req, res) => {
-  const { booking_code, user_id, vehicle_id, total_price } = req.body;
+// ── POST: Simpan Notifikasi Sesuai Kolom Database Asli ────────────────────────
+app.post("/api/notifications", async (req, res) => {
+  try {
+    const payload = req.body;
 
-  const timestamp = new Date().toISOString();
-  const logEntry = [
-    '========================================',
-    `Timestamp    : ${timestamp}`,
-    `Booking Code : ${booking_code}`,
-    `User ID      : ${user_id}`,
-    `Vehicle ID   : ${vehicle_id}`,
-    `Total Price  : ${total_price}`,
-    '========================================',
-    '',
-  ].join('\n');
+    // Pemetaan data dari Laravel payload ke kolom asli MariaDB kamu
+    const user_id = payload.user_id || null;
+    const booking_id = payload.booking_id || payload.vehicle_id || null; // Ambil ID angka
+    const type = payload.type || "info";
+    const recipient = payload.recipient || "admin"; // Isian default untuk kolom recipient
+    const message = payload.message || "No message";
+    const status = payload.status || "unread";
 
-  fs.appendFile(LOG_FILE, logEntry, (err) => {
-    if (err) {
-      return res.status(500).json({ success: false, message: 'Failed to log notification' });
-    }
-    res.status(201).json({ success: true, message: 'Notification logged successfully' });
-  });
+    // Query INSERT disesuaikan dengan struktur gambar skema kamu
+    const query = `
+      INSERT INTO notification_logs (user_id, booking_id, type, recipient, message, status) 
+      VALUES (?, ?, ?, ?, ?, ?)
+    `;
+
+    await pool.execute(query, [
+      user_id,
+      booking_id,
+      type,
+      recipient,
+      message,
+      status,
+    ]);
+
+    res.status(201).json({
+      success: true,
+      message: "Notification saved to MariaDB successfully",
+    });
+  } catch (error) {
+    console.error("MariaDB SQL Error on POST:", error);
+    res
+      .status(500)
+      .json({ success: false, message: "Database failure: " + error.message });
+  }
+});
+
+// ── GET: Ambil Notifikasi untuk Dashboard Admin ──────────────────────────────
+app.get("/api/notifications", async (req, res) => {
+  try {
+    // Menarik semua kolom termasuk id, recipient, dan status
+    const [rows] = await pool.execute(
+      "SELECT * FROM notification_logs ORDER BY created_at DESC LIMIT 15",
+    );
+    res.json(rows);
+  } catch (error) {
+    console.error("MariaDB SQL Error on GET:", error);
+    res
+      .status(500)
+      .json({ success: false, message: "Database failure: " + error.message });
+  }
 });
 
 app.listen(PORT, () => {
-  console.log(`notification-service running on port ${PORT}`);
+  console.log(
+    `Notification service running on port ${PORT} (Connected via Column-Match)`,
+  );
 });

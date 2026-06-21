@@ -14,6 +14,9 @@ use Illuminate\Notifications\Notifiable;
 #[Hidden(['password', 'remember_token'])]
 class User extends Authenticatable
 {
+    // Set by JwtStatelessAuth middleware; not a database column
+    public ?string $role = null;
+
     /** @use HasFactory<UserFactory> */
     use HasFactory, Notifiable;
 

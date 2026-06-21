@@ -61,6 +61,22 @@ const vehicleRepository = {
     );
     return result.affectedRows > 0;
   },
+
+  async exists(id) {
+    const [rows] = await db.query(
+      "SELECT id FROM catalog_vehicles WHERE id = ?",
+      [id],
+    );
+    return rows.length > 0;
+  },
+
+  async patchStatus(id, status) {
+    const [result] = await db.query(
+      "UPDATE catalog_vehicles SET status = ? WHERE id = ?",
+      [status, id],
+    );
+    return result.affectedRows;
+  },
 };
 
 module.exports = vehicleRepository;

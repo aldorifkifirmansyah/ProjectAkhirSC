@@ -1,0 +1,105 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Create Account — Rental</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="style.css" />
+    <script src="app.js" defer></script>
+    <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+  </head>
+  <body class="bg-zinc-950 text-zinc-100 min-h-screen flex items-center justify-center px-4 py-12">
+
+    <div x-data="registerComponent" class="w-full max-w-md">
+
+      <!-- Brand -->
+      <div class="mb-10 text-center">
+        <div class="inline-flex items-center justify-center w-12 h-12 rounded-xl bg-zinc-800 border border-zinc-700 mb-4">
+          <svg class="w-6 h-6 text-zinc-300" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M8.25 18.75a1.5 1.5 0 01-3 0m3 0a1.5 1.5 0 00-3 0m3 0h6m-9 0H3.375a1.125 1.125 0 01-1.125-1.125V14.25m17.25 4.5a1.5 1.5 0 01-3 0m3 0a1.5 1.5 0 00-3 0m3 0h1.125c.621 0 1.129-.504 1.09-1.124a17.902 17.902 0 00-3.213-9.193 2.056 2.056 0 00-1.58-.86H14.25M16.5 18.75h-2.25m0-11.177v-.958c0-.568-.422-1.048-.987-1.106a48.554 48.554 0 00-10.026 0 1.106 1.106 0 00-.987 1.106v7.635m12-6.677v6.677m0 4.5v-4.5m0 0h-12" />
+          </svg>
+        </div>
+        <h1 class="text-2xl font-semibold tracking-tight">Create Account</h1>
+        <p class="mt-1 text-sm text-zinc-500">Start renting vehicles today</p>
+      </div>
+
+      <!-- Card -->
+      <div class="bg-zinc-900 border border-zinc-800 rounded-2xl p-8 shadow-xl shadow-black/40">
+
+        <!-- Error banner -->
+        <div
+          x-show="error"
+          x-transition:enter="transition ease-out duration-150"
+          x-transition:enter-start="opacity-0 -translate-y-1"
+          x-transition:enter-end="opacity-100 translate-y-0"
+          class="mb-5 flex items-start gap-3 bg-red-950/60 border border-red-800/60 text-red-300 text-sm rounded-lg px-4 py-3"
+        >
+          <svg class="w-4 h-4 mt-0.5 shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126zM12 15.75h.007v.008H12v-.008z" />
+          </svg>
+          <span x-text="error"></span>
+        </div>
+
+        <form @submit.prevent="submit" class="space-y-5">
+
+          <div class="space-y-1.5">
+            <label class="block text-xs font-medium text-zinc-400 uppercase tracking-widest">Full Name</label>
+            <input
+              type="text" x-model="name" required autocomplete="name" placeholder="Your full name"
+              class="w-full bg-zinc-950 border border-zinc-700 text-zinc-100 placeholder-zinc-600 rounded-lg px-4 py-2.5 text-sm outline-none focus:border-zinc-500 focus:ring-1 focus:ring-zinc-500 transition"
+            />
+          </div>
+
+          <div class="space-y-1.5">
+            <label class="block text-xs font-medium text-zinc-400 uppercase tracking-widest">Email</label>
+            <input
+              type="email" x-model="email" required autocomplete="email" placeholder="you@example.com"
+              class="w-full bg-zinc-950 border border-zinc-700 text-zinc-100 placeholder-zinc-600 rounded-lg px-4 py-2.5 text-sm outline-none focus:border-zinc-500 focus:ring-1 focus:ring-zinc-500 transition"
+            />
+          </div>
+
+          <div class="space-y-1.5">
+            <label class="block text-xs font-medium text-zinc-400 uppercase tracking-widest">Password</label>
+            <input
+              type="password" x-model="password" required autocomplete="new-password" placeholder="Min. 6 characters"
+              class="w-full bg-zinc-950 border border-zinc-700 text-zinc-100 placeholder-zinc-600 rounded-lg px-4 py-2.5 text-sm outline-none focus:border-zinc-500 focus:ring-1 focus:ring-zinc-500 transition"
+            />
+          </div>
+
+          <div class="space-y-1.5">
+            <label class="block text-xs font-medium text-zinc-400 uppercase tracking-widest">Confirm Password</label>
+            <input
+              type="password" x-model="confirm" required autocomplete="new-password" placeholder="Repeat your password"
+              class="w-full bg-zinc-950 border border-zinc-700 text-zinc-100 placeholder-zinc-600 rounded-lg px-4 py-2.5 text-sm outline-none focus:border-zinc-500 focus:ring-1 focus:ring-zinc-500 transition"
+            />
+            <!-- Live password-match indicator -->
+            <p
+              x-show="confirm && password !== confirm"
+              class="text-xs text-red-400 mt-1"
+            >Passwords don't match yet.</p>
+          </div>
+
+          <button
+            type="submit" :disabled="loading || (confirm && password !== confirm)"
+            class="w-full mt-1 flex items-center justify-center gap-2 bg-zinc-100 hover:bg-white text-zinc-900 font-semibold text-sm rounded-lg px-4 py-2.5 transition disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            <svg x-show="loading" class="animate-spin w-4 h-4" fill="none" viewBox="0 0 24 24">
+              <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+              <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"></path>
+            </svg>
+            <span x-text="loading ? 'Creating account…' : 'Create Account'"></span>
+          </button>
+
+        </form>
+      </div>
+
+      <p class="mt-6 text-center text-sm text-zinc-500">
+        Already have an account?
+        <a href="login.html" class="text-zinc-300 hover:text-white font-medium underline-offset-2 hover:underline transition">Sign in</a>
+      </p>
+      <p class="mt-3 text-center text-xs text-zinc-700">&copy; 2024 Rental. All rights reserved.</p>
+    </div>
+
+  </body>
+</html>

@@ -75,7 +75,7 @@ class BookingController extends Controller
                 'end_date' => $request->end_date,
                 'total_days' => $totalDays,
                 'total_price' => $totalPrice,
-                'status' => 'pending'
+                'status' => 'booked'
             ]);
 
             // 6. Update status kendaraan di Catalog Service menjadi 'booked' via PATCH
@@ -84,12 +84,23 @@ class BookingController extends Controller
             ]);
 
             // 7. Kirim notifikasi ke Notification Service
-            Http::post(env('NOTIFICATION_SERVICE_URL') . '/notifications', [
-                'booking_code' => $booking->booking_code,
-                'user_id'      => $booking->user_id,
-                'vehicle_id'   => $booking->vehicle_id,
-                'total_price'  => $booking->total_price,
-            ]);
+            try {
+                Http::post('http://localhost:3002/api/notifications', [
+                    'type'         => 'booking_created',
+                    'message'      => 'New booking created! Booking code: ' . $booking->booking_code
+                                      . ', Vehicle ID: ' . $booking->vehicle_id
+                                      . ', Total: Rp ' . number_format($booking->total_price, 0, ',', '.'),
+                    'status'       => 'unread',
+                    'timestamp'    => now()->toISOString(),
+                    'booking_code' => $booking->booking_code,
+                    'user_id'      => $booking->user_id,
+                    'vehicle_id'   => $booking->vehicle_id,
+                    'total_days'   => $booking->total_days,
+                    'total_price'  => $booking->total_price,
+                ]);
+            } catch (\Exception $e) {
+                // Non-fatal: notification failure does not block the booking response
+            }
 
             return response()->json([
                 'success' => true,
@@ -108,11 +119,105 @@ class BookingController extends Controller
     public function myBookings()
     {
         $user = auth()->user();
-        $bookings = BookingTransaction::where('user_id', $user->id)->get();
+        $bookings = BookingTransaction::where('user_id', $user->id)
+            ->orderBy('created_at', 'desc')
+            ->get();
 
         return response()->json([
             'success' => true,
             'data' => $bookings
+        ], 200);
+    }
+
+    public function allBookings()
+    {
+        if (auth()->user()->role !== 'admin') {
+            return response()->json(['success' => false, 'message' => 'Unauthorized'], 403);
+        }
+
+        $bookings = BookingTransaction::orderBy('created_at', 'desc')->get();
+
+        return response()->json([
+            'success' => true,
+            'data' => $bookings
+        ], 200);
+    }
+
+    public function cancel(Request $request, $id)
+    {
+        $user    = auth()->user();
+        $booking = BookingTransaction::find($id);
+
+        if (!$booking) {
+            return response()->json(['success' => false, 'message' => 'Booking not found'], 404);
+        }
+
+        // Customers may only cancel their own bookings; admins may cancel any
+        if ($user->role !== 'admin' && $booking->user_id != $user->id) {
+            return response()->json(['success' => false, 'message' => 'Unauthorized'], 403);
+        }
+
+        if (in_array($booking->status, ['cancelled', 'completed'])) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Booking is already ' . $booking->status
+            ], 400);
+        }
+
+        $booking->status = 'cancelled';
+        $booking->save();
+
+        // Release vehicle back to available in catalog-service
+        try {
+            Http::patch(env('CATALOG_SERVICE_URL') . '/vehicles/' . $booking->vehicle_id . '/status', [
+                'status' => 'available'
+            ]);
+        } catch (\Exception $e) {
+            // Non-fatal: catalog sync failure does not block the cancel response
+        }
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Booking cancelled successfully',
+            'data'    => $booking
+        ], 200);
+    }
+
+    public function complete(Request $request, $id)
+    {
+        if (auth()->user()->role !== 'admin') {
+            return response()->json(['success' => false, 'message' => 'Unauthorized'], 403);
+        }
+
+        $booking = BookingTransaction::find($id);
+
+        if (!$booking) {
+            return response()->json(['success' => false, 'message' => 'Booking not found'], 404);
+        }
+
+        if (in_array($booking->status, ['cancelled', 'completed'])) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Booking is already ' . $booking->status
+            ], 400);
+        }
+
+        $booking->status = 'completed';
+        $booking->save();
+
+        // Release vehicle back to available in catalog-service
+        try {
+            Http::patch(env('CATALOG_SERVICE_URL') . '/vehicles/' . $booking->vehicle_id . '/status', [
+                'status' => 'available'
+            ]);
+        } catch (\Exception $e) {
+            // Non-fatal: catalog sync failure does not block the complete response
+        }
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Booking marked as completed',
+            'data'    => $booking
         ], 200);
     }
 }
